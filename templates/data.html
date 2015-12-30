@@ -1,0 +1,237 @@
+{% extends "layout.html" %}
+{% block title %}用户列表{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+	
+    </style>		
+	 <link type="text/css" href="{{ base }}/css/jquery.dataTables.css" rel="stylesheet">
+	  <link type="text/css" href="{{ base }}/css/jquery.datetimepicker.css" rel="stylesheet">
+	<!-- <link type="text/css" href="{{ base }}/css/dataTables.bootstra.css" rel="stylesheet">-->
+{% endblock %}
+
+{% block content %}
+    <div class="container">	
+        <div class="row">
+            <div class="page-header">
+                <div class="form-inline" id="Form1" method="post" action="/dms/admin/data">
+                    <div class="form-group">
+						
+                        <label for="userfromid">业务名:</label>
+						<select class="form-control" id="userfrom" name="userFrom" onchange="getTablename(this.value)"> 
+							<option value=""></option>
+						</select>
+						
+						<label for="tablename1">业务子表:</label>					
+						<select class="form-control" id="tablename" name="tablename" onchange="getKey(this.value)">
+							<option value=""></option>
+						</select>	
+                    </div>
+					<button type="submit" class="btn btn-default" id="ok" ><font color="#ff0000">查询</font></button>
+					<div class="form-inline" id="conditions">
+					</div>                 
+                </div>
+            </div>
+			<div id="griddata"></div>
+			
+            <div class="table-responsive" id="showdata">
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block js %}
+	<script src="{{ base }}/js/jquery.js"></script>
+	<script src="{{ base }}/js/jquery.dataTables.js"></script>
+
+	<script src="{{ base }}/js/highcharts.js"></script>
+	<script src="{{ base }}/js/modules/exporting.js"></script>
+	
+	<script src="{{ base }}/js/jquery.datetimepicker.js"></script>
+    <script type="text/javascript" charset="utf-8">
+	
+		var userfrom = ''
+		var tablename = ''
+		var tableheader = new Array()
+		
+		$(document).ready(function () {		
+				//动态获取业务名
+				$.getJSON("/dms/admin/userfrom", function(data){
+					for(var i=0; i<data.userfrom.length; i++)
+					{	
+						var   newOption   =   document.createElement("option"); 
+						newOption.value = data.userfrom[i]; 
+						newOption.text = data.userfrom[i];
+						document.getElementById("userfrom").options.add(newOption); 
+					}
+				});
+		});
+
+		//点击查询执行指令
+		$("#ok").click(function event(){
+			if(userfrom == '' || tablename == '')
+			{
+				alert("请选择查询业务名及表名")
+				$('#showdata').html('')
+				$('#conditions').html('')
+				$('#griddata').html('')
+				return
+			}
+			
+			if(tablename == 'powershowgrid')
+				tableheader = [{'title':'devid','class':'center'},{'title':'温度','class':'center'},{'title':'电量','class':'center'},{'title':'功率','class':'center'},{'title':'执行时间','class':'center'},{'title':'执行动作','class':'center'},]
+			
+			$('#showdata').html( '<table cellpadding="0" cellspacing="0" border="0" class="table table-bordered table-hover" id="example" width = 2000px></table>' );
+			$('#example').dataTable({
+				"bDeferRender":false,
+				"bPaginate": true,
+				"sPaginationType":"full_numbers",
+				"bLengthChange": true,
+				"bSort": true,
+				"bFilter":false,
+				"bServerSide":true,
+				"bProcessing":true,
+				"columns":tableheader,				
+				"sScrollX": "100%",
+				"oLanguage": {
+                    "sProcessing": "正在加载中......",
+                    "sLengthMenu": "每页显示 _MENU_ 条记录",
+                    "sZeroRecords": "对不起，查询不到相关数据！",
+                     "sEmptyTable": "表中无数据存在！",
+                     "sInfo": "当前显示 _START_ 到 _END_ 条，共 _TOTAL_ 条记录",
+                      "sInfoFiltered": "数据表中共为 _MAX_ 条记录",
+                     "sSearch": "搜索",
+                     "oPaginate": {
+                         "sFirst": "首页",
+                         "sPrevious": "上一页",
+                         "sNext": "下一页",
+                         "sLast": "末页"
+                     }
+                 },
+				"dom": 'T<"clear">lfrtip',
+				"ajax":{
+					"type":"POST",
+					"url":"/dms/admin/data",
+					"dataType":"json",
+					"data":function(conditions){
+						conditions["userFrom"] = userfrom;
+						conditions["tablename"] = tablename;					
+						$("#conditions").find("input").each(function(){	
+							if(this.value != '')
+								conditions[this.id] = this.value
+						});			
+					}
+				}			
+			});
+		});
+		
+		//根据业务名获取包含的表名
+		function getTablename(id){		
+			tablename = ''
+			userfrom = id
+			document.getElementById("tablename").innerHTML = ''
+			document.getElementById("conditions").innerHTML = ''
+			document.getElementById("showdata").innerHTML = ''
+			var   newOption   =   document.createElement("option"); 
+			newOption.value = ''; 
+			newOption.text = '';
+			document.getElementById("tablename").options.add(newOption); 
+			var url = "/dms/admin/tablename?userFrom=" + id
+			$.getJSON(url, function(data){			
+				for(var i=0; i<data.tablename.length; i++)
+				{	
+					var   newOption   =   document.createElement("option"); 
+					newOption.value = data.tablename[i]; 
+					newOption.text = data.tablename[i];
+					document.getElementById("tablename").options.add(newOption); 
+					}
+			});
+		}
+	
+		//获取key，动态设定过滤条件
+		function getKey(id){			
+			tablename = id
+			tableheader = []
+			document.getElementById("conditions").innerHTML = ''
+			document.getElementById("showdata").innerHTML = ''
+			var url = "/dms/admin/key?tablename=" + id
+			$.getJSON(url, function(data){
+				document.getElementById("conditions").innerHTML = ''
+				for(var i=0; i<data.keys.length; i++){
+					var item = data.keys[i].trim()
+					if (item == "tablename" || item == '_id')
+						continue;			
+					var newDiv = document.createElement("div");
+					var newLable = document.createElement("lable");
+					var newInput = document.createElement("input");
+					newDiv.appendChild(newLable);
+					newDiv.appendChild(newInput);
+					newDiv.setAttribute("class","form-group");
+					newLable.innerHTML = data.keys[i]+':';
+					newInput.type = "text";
+					newInput.class = "form-control";
+					newInput.id = data.keys[i];
+					newInput.name = data.keys[i];				
+					temp = {}
+					temp["title"] = data.keys[i]
+					temp["class"] = "center"
+					tableheader.push(temp)
+					document.getElementById("conditions").appendChild(newDiv);
+				}
+				if(document.getElementById("userfrom").value == "业务持久化存储服务"){
+					document.getElementById("conditions").innerHTML = ''
+					var newDivdevid = document.createElement("div");
+					var newLabledevid = document.createElement("lable");
+					var newInputdevid = document.createElement("input");
+					newDivdevid.appendChild(newLabledevid);
+					newDivdevid.appendChild(newInputdevid);
+					newDivdevid.setAttribute("class","form-group");
+					newLabledevid.innerHTML = "devid:";
+					newInputdevid.type = "text";
+					newInputdevid.class = "form-control";
+					newInputdevid.id = "devid";
+					newInputdevid.name = "devid";
+					
+					var newDivstarttime = document.createElement("div");
+					var newLablestarttime = document.createElement("lable");
+					var newInputstarttime = document.createElement("input");
+					newDivstarttime.appendChild(newLablestarttime);
+					newDivstarttime.appendChild(newInputstarttime);
+					newDivstarttime.setAttribute("class","form-group");
+					newLablestarttime.innerHTML = "starttime:";
+					newInputstarttime.type = "text";
+					newInputstarttime.class = "form-control";
+					newInputstarttime.id = "starttime";
+					newInputstarttime.name = "starttime";
+					
+					var newDivendtime = document.createElement("div");
+					var newLableendtime = document.createElement("lable");
+					var newInputendtime = document.createElement("input");
+					newDivendtime.appendChild(newLableendtime);
+					newDivendtime.appendChild(newInputendtime);
+					newDivendtime.setAttribute("class","form-group");
+					newLableendtime.innerHTML = "endtime:";
+					newInputendtime.type = "text";
+					newInputendtime.class = "form-control";
+					newInputendtime.id = "endtime";
+					newInputendtime.name = "endtime";
+					document.getElementById("conditions").appendChild(newDivdevid);
+					document.getElementById("conditions").appendChild(newDivstarttime);
+					document.getElementById("conditions").appendChild(newDivendtime);
+					
+					$('#starttime').datetimepicker({
+						step: 5,
+						lang:"ch"
+					});
+					$('#endtime').datetimepicker({
+						step: 5,
+						lang:"ch"
+					});
+	
+				}
+			});
+		}
+
+    </script>
+{% endblock %}

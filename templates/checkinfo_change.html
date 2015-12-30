@@ -1,0 +1,177 @@
+{% extends "layout.html" %}
+{% block title %}用户列表{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+	
+    </style>		
+	 <link type="text/css" href="{{ base }}/css/jquery.dataTables.css" rel="stylesheet">
+	 <link type="text/css" href="{{ base }}/css/jquery.datetimepicker.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    <div class="container">	
+        <div class="row">
+            <div class="page-header">
+                <div class="form-inline" id="Form1" method="post" action="/dms/check/change">				
+					<div class="form-inline" id="">
+						<label for="id">设备号：</label>					
+						<input type="text" class="form-control" id="id" value=""/>
+						<label for="findtime">时间：</label>					
+						<input type="text" class="form-control" id="findtime" value=""/>
+						<button type="submit" class="btn btn-default" id="ok" ><font color="#ff0000">查询</font></button>
+					</div>
+                </div>				
+            </div>
+			
+			<div id="container1" style="margin: 0 auto">
+				<form method="post" action="/dms/check/edit" encType="multipart/form-data">
+                            <div class="form-group">
+                                <label for="name">用户姓名：</label>
+                                <input type="text" name="name" class="form-control" id="name">
+                            </div>
+							<div class="form-group">
+                                <label for="devid">插座编号：</label>
+                                <input type="text" name="devid" class="form-control" id="devid" readOnly="true">
+                            </div>
+							<div class="form-group">
+                                <label for="time">报告生成时间：</label>
+                                <input type="text" name="time" class="form-control" id="time" readOnly="true">
+                            </div>
+							<div class="form-group">
+                                <label for="devinfo">设备信息：</label>
+                                <input type="text" name="devinfo" class="form-control" id="devinfo" >
+                            </div>
+							<div class="form-group">
+                                <label for="runstatus">运行情况：</label>
+									<select class="form-control" id="runstatus" name="runstatus" onchange="changeUL(this.value)">
+										<option value="">请选择</option>
+										<option value="normal">空调工作正常</option>
+										<option value="abnormal">空调工作异常</option>										
+									</select>
+                            </div>
+							<div class="form-group">
+                                <label for="efficiency">额定制冷功率：</label>
+                                <input type="text" name="efficiency" class="form-control" id="efficiency" >
+                            </div>
+							
+							<div class="form-group">
+                                <label for="status">诊断工作情况：</label>
+                                <input type="text" name="status" class="form-control" id="status"
+                                       placeholder="多条请以&分割">
+                            </div>
+							
+							<div class="form-group">
+                                <label for="abnormal_reason">诊断异常原因：</label>
+                                <input type="text" name="abnormal_reason" class="form-control" id="abnormal_reason"
+                                       placeholder="多条请以&分割">
+                            </div>
+                            
+							<div class="form-group">
+                                <label for="principle">检测原理：</label>
+                                <input type="text" name="principle" class="form-control" id="principle"
+                                       placeholder="多条请以&分割">
+                            </div>
+							
+                            <div class="form-group">
+                                <label for="imageFile">上传图片</label>
+								<ul id='img'>						
+								</ul>							
+                                <p class="help-block">格式限于jpg,png,gif,大小限制100k以内，建议最大不超过360*180.</p>
+                            </div>
+                            <button type="submit" class="btn btn-default">提交</button>
+                </form>
+			</div>
+			
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block js %}
+	<script src="{{ base }}/js/jquery.datetimepicker.js"></script>
+    <script type="text/javascript" charset="utf-8">
+		$(document).ready(function () {})
+			
+		//点击查询执行指令
+		$("#ok").click(function event(){	
+			time = $('#findtime').val()
+			devid = $('#id').val()
+			$.ajax({
+				    type:"POST",
+				    url: "/dms/check/change",
+				    dataType:"json",
+					data:{"time":time,"devid":devid},
+				    success:function(data){    
+					   showdata(data)	
+					},
+				    error: function(xmlHttpRequest, textStatus, errorThrown){
+						alert(XMLHttpRequest.status);
+				    }
+			  });
+		});
+		
+		function showdata(data){
+			$('#name').val(data.name)
+			$('#devid').val(data.devid)
+			$('#time').val(data.time)
+			$('#devinfo').val(data.devinfo)
+			$('#efficiency').val(data.efficiency)
+			var status = ''
+			length = data.status.length
+			for(var i=0;i<length-1;i++){
+				status = status + data.status[i] + '&'
+			}
+			status = status + data.status[length-1]
+			$('#status').val(data.status)
+			
+			var principle = ''
+			length = data.principle.length
+			for(var i=0;i<length-1;i++){
+				principle = principle + data.principle[i] + '&'
+			}
+			principle = principle + data.principle[length-1]
+			$('#principle').val(principle)
+			
+			var abnormal_reason = ''
+			length = data.abnormal_reason.length
+			for(var i=0;i<length-1;i++){
+				abnormal_reason = abnormal_reason + data.abnormal_reason[i] + '&'
+			}
+			abnormal_reason = abnormal_reason + data.abnormal_reason[length-1]
+			$('#abnormal_reason').val(abnormal_reason)
+			
+			runstatus = data.runstatus
+			document.getElementById("img").innerHTML = ''
+			if(runstatus == 'normal')
+			{	document.getElementById("runstatus").options[1].selected = true			
+				document.getElementById('img').innerHTML = '<li><label>区域温度图</label><img id="weatherimg1"><input type="file" name="weatherimg" id="weatherimg"></li><li><label>运行图</label><img id="run1"><input type="file" name="run" id="run"></li><li><label>正常运行细节图1</label><img id="normal_detail11"><input type="file" name="normal_detail1" id="normal_detail1"></li>'
+				document.getElementById("weatherimg1").src= data.images.weatherimg;
+				document.getElementById("run1").src= data.images.run;
+				document.getElementById("normal_detail11").src= data.images.normal_detail1;
+			}
+			else if(runstatus == 'abnormal')
+			{	document.getElementById("runstatus").options[2].selected = true		
+				document.getElementById('img').innerHTML = '<li><label>区域温度图</label><img id="weatherimg1"><input type="file" name="weatherimg" id="weatherimg"></li><li><label>运行图</label><img id="run1"><input type="file" name="run" id="run"></li><li><label>正常运行细节图1</label><img id="normal_detail11"><input type="file" name="normal_detail1" id="normal_detail1"></li><li><label>异常运行细节图1</label><img id="abnormal_detail11"><input type="file" name="abnormal_detail1" id="abnormal_detail1"></li><li><label>异常运行细节图2</label><img id="abnormal_detail21"><input type="file" name="abnormal_detail2" id="abnormal_detail2"></li>'	
+				document.getElementById("weatherimg1").src= data.images.weatherimg;
+				document.getElementById("run1").src= data.images.run;
+				document.getElementById("normal_detail11").src= data.images.normal_detail1;
+				document.getElementById("abnormal_detail11").src= data.images.abnormal_detail1;
+				document.getElementById("abnormal_detail21").src= data.images.abnormal_detail2;
+				
+			}
+		}
+		
+		
+		function changeUL(value){
+			document.getElementById("img").innerHTML = ''
+			if(value == "normal"){
+				document.getElementById('img').innerHTML = '<li><label>区域温度图</label><input type="file" name="weatherimg" id="weatherimg"></li><li><label>运行图</label><input type="file" name="run" id="run"></li><li><label>正常运行细节图1</label><input type="file" name="normal_detail1" id="normal_detail1"></li>'
+			}
+			else if (value == "abnormal"){
+				document.getElementById('img').innerHTML = '<li><label>区域温度图</label><input type="file" name="weatherimg" id="weatherimg"></li><li><label>运行图</label><input type="file" name="run" id="run"></li><li><label>正常运行细节图1</label><input type="file" name="normal_detail1" id="normal_detail1"></li><li><label>异常运行细节图1</label><input type="file" name="abnormal_detail1" id="abnormal_detail1"></li><li><label>异常运行细节图2</label><input type="file" name="abnormal_detail2" id="abnormal_detail2"></li>'
+			}
+		}
+
+    </script>
+{% endblock %}

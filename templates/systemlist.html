@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+{% block title %}业务列表{% endblock %}
+{% block head %}
+{{ super() }}
+<style type="text/css">
+
+</style>
+{% endblock %}
+
+{% block content %}
+
+    <div class="container">
+        <div class="row">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th>业务名</th>
+                        <th>业务ID</th>
+                        <th>保存等级</th>
+						<th>备注</th>
+						<th>操作</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    {% if bss %}
+
+                        {% for bs in bss %}
+
+                            <tr>
+                                <td>{{ bs['userFrom'] }}</td>
+                                <td>{{ bs['tagID'] }}</td>
+                                <td>{{ bs['level'] }}</td>
+								<td>{{ bs['remark']}}</td>
+								<td>
+									<a href="/dms/admin/del/{{ bs['_id'] }}" class="btn btn-danger" role="button">删除</a>
+									<a href="/dms/admin/addchild" class="btn btn-danger" role="button">添加子表</a>
+								</td>
+                            </tr>
+
+                        {% endfor %}
+
+                    {% else %}
+                        <tr>
+                            <td colspan="4">未找到相关数据</td>
+                        </tr>
+                    {% endif %}
+                    </tbody>
+                </table>
+                <nav>
+                    <ul class="pagination">
+                        {% for p in page %}
+                            <li>{{ p }}</li>
+                        {% endfor %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+    </div>
+
+{% endblock %}
+
+{% block js %}
+    <script>
+        $(document).ready(function () {
+            $("li").removeClass();
+            $("#accountlist").addClass("active");
+        });
+
+    </script>
+{% endblock %}

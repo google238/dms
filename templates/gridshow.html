@@ -1,0 +1,199 @@
+{% extends "layout.html" %}
+{% block title %}用户列表{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+	
+    </style>		
+	 <link type="text/css" href="{{ base }}/css/jquery.dataTables.css" rel="stylesheet">
+	<!-- <link type="text/css" href="{{ base }}/css/dataTables.bootstra.css" rel="stylesheet">-->
+{% endblock %}
+
+{% block content %}
+    <div class="container">	
+        <div class="row">
+            <div class="page-header">
+                <div class="form-inline" id="Form1" method="post" action="/dms/admin/data/">
+                    <div class="form-group">
+						
+                        <label for="userfromid">业务名:</label>
+						<select class="form-control" id="userfrom" name="userFrom" onchange="getTablename(this.value)"> 
+							<option value=""></option>
+						</select>
+						
+						<label for="tablename1">业务子表:</label>					
+						<select class="form-control" id="tablename" name="tablename" onchange="getKey(this.value)">
+							<option value=""></option>
+						</select>	
+                    </div>
+					<label for="tablename1">类别:</label>					
+						<select class="form-control" id="conditions" name="conditions">
+							<option value=""></option>
+						</select>
+					<button type="submit" class="btn btn-default" id="ok" ><font color="#ff0000">查询</font></button>					
+                 
+                </div>
+            </div>
+			<div id="container" style="min-width: 310px; height: 400px; max-width: 600px; margin: 0 auto"></div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block js %}
+	<script src="{{ base }}/js/jquery.js"></script>
+	<script src="{{ base }}/js/jquery.dataTables.js"></script>
+
+	<script src="{{ base }}/js/highcharts.js"></script>
+	<script src="{{ base }}/js/modules/exporting.js"></script>
+    <script type="text/javascript" charset="utf-8">
+	
+		var userfrom = ''
+		var tablename = ''
+		var tableheader = new Array()
+		
+		$(document).ready(function () {		
+				//动态获取业务名
+				$.getJSON("/dms/admin/userfrom", function(data){
+					for(var i=0; i<data.userfrom.length; i++)
+					{	
+						var   newOption   =   document.createElement("option"); 
+						newOption.value = data.userfrom[i]; 
+						newOption.text = data.userfrom[i];
+						document.getElementById("userfrom").options.add(newOption); 
+					}
+				});
+				
+				
+					// Make monochrome colors and set them as default for all pies
+			/*	Highcharts.getOptions().plotOptions.pie.colors = (function () {
+					var colors = [],
+					base = Highcharts.getOptions().colors[0],
+					i;
+					for (i = 0; i < 10; i += 1) {
+						colors.push(Highcharts.Color(base).brighten((i - 3) / 7).get());
+					}
+					return colors;
+				}());*/
+		});
+
+		//点击查询执行指令
+		$("#ok").click(function event(){
+			var key= $('#conditions option:selected').text()
+			if(userfrom == '' || tablename == '')
+			{
+				alert("请选择查询业务名及表名")
+				$('#conditions').html('')
+				$('#container').html('')
+				return
+			}
+			
+			$.ajax({
+               type:"POST",
+               url: "/dms/admin/griddata/show",
+               dataType:"json",
+               data:{"tablename":tablename,"key":key},
+               success:function(data){  		   
+					chartlineP(data);
+               },
+               error: function(xmlHttpRequest, textStatus, errorThrown){
+                    alert(XMLHttpRequest.status);
+               }
+          });			
+		});
+		
+		function chartlineP(data){
+			seriesdata = new Array()
+			for(var i=0; i<data.result.length; i++){
+				var temp = new Array()
+				temp.push(data.result[i].key)
+				temp.push(data.result[i].value)
+				seriesdata.push(temp)
+			}
+			$('#container').highcharts({
+				chart: {
+					plotBackgroundColor: null,
+					plotBorderWidth: null,
+					plotShadow: false
+				},
+				title: {
+					text: '占比图'
+				},
+				credits: { 
+					enabled: false   //右下角不显示LOGO 
+				},
+				tooltip: {
+					pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+				},
+				plotOptions: {
+					pie: {
+						allowPointSelect: true,
+						cursor: 'pointer',
+						dataLabels: {
+							enabled: true,
+							format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+							style: {
+								color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+							}
+						}
+					}
+				},
+				series: [{
+					type: 'pie',
+					name: '比例',
+					data: seriesdata
+				}]
+			});
+		}
+		
+		//根据业务名获取包含的表名
+		function getTablename(id){		
+			tablename = ''
+			userfrom = id
+			document.getElementById("tablename").innerHTML = ''
+			document.getElementById("conditions").innerHTML = ''
+			document.getElementById("container").innerHTML = ''
+			var   newOption   =   document.createElement("option"); 
+			newOption.value = ''; 
+			newOption.text = '';
+			document.getElementById("tablename").options.add(newOption); 
+			var url = "/dms/admin/tablename?userFrom=" + id
+			$.getJSON(url, function(data){			
+				for(var i=0; i<data.tablename.length; i++)
+				{	
+					var   newOption   =   document.createElement("option"); 
+					newOption.value = data.tablename[i]; 
+					newOption.text = data.tablename[i];
+					document.getElementById("tablename").options.add(newOption); 
+					}
+			});
+		}
+	
+		//获取key，动态设定过滤条件
+		function getKey(id){			
+			tablename = id
+			tableheader = []
+			document.getElementById("conditions").innerHTML = ''
+			document.getElementById("container").innerHTML = ''
+			var   newOption   =   document.createElement("option"); 
+			newOption.value = ''; 
+			newOption.text = '';
+			document.getElementById("conditions").options.add(newOption); 
+			var url = "/dms/admin/key?tablename=" + id
+			$.getJSON(url, function(data){
+				document.getElementById("conditions").innerHTML = ''
+				for(var i=0; i<data.keys.length; i++){
+					var item = data.keys[i].trim()
+					if (item == "tablename" || item == '_id' || item == 'content' || item == 'acceptTime' || item == 'uptime' )
+						continue;			
+					var   newOption   =   document.createElement("option"); 
+					newOption.value = item; 
+					newOption.text = item;
+					document.getElementById("conditions").options.add(newOption);
+				}
+			});
+		}
+
+    </script>
+{% endblock %}

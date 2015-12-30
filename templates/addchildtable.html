@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+{% block title %}{{title}}{% endblock %}
+{% block head %}
+{{super()}}
+<style type="text/css">
+
+
+</style>
+{% endblock %}
+{% block content %}
+
+<div role="tabpanel">
+    <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active" id="image">
+            <div class="row">
+                <div class="col-md-4">
+					<div id="message" class="form-group">
+					<font color="#FF0000">
+					{{msg}}
+					</font>
+					</div>
+					<form class="form-horizontal" method="post" action="/dms/admin/addchildtable">
+						<div class="form-group">
+						<label for="inputtablename" class="col-sm-2 control-label">子表名称</label>
+						<div class="col-sm-6">
+							<input type="text" class="form-control" id="tablename" name="tablename">
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="inputlevel" class="col-sm-2 control-label">保存等级</label>
+						<div class="col-sm-6">
+                    <!--    <input type="text" class="form-control" id="level" name="level">-->
+							<select class="form-control" id="level" name="level"> 
+							<option value="1">永久保存在数据库</option>
+							<option value="2">超过200000条后转移至文件</option>
+							<option value="3">只保存至文件</option>
+						</select>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="inputremark" class="col-sm-2 control-label">备注</label>
+						<div class="col-sm-6">
+                        <input type="text" class="form-control" id="remark" name="remark">
+						</div>
+					</div>
+					<div class="form-group">
+                    <div class="col-sm-offset-2 col-sm-6">
+                        <button type="submit" class="btn btn-lg btn-primary btn-block">确认</button>
+                    </div>
+					</div>
+					</form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script src="{{ base }}/js/tab.js"></script>
+<script src="{{ base }}/js/alert.js"></script>
+<script>
+    $(document).ready(function () {
+    //    $("li").removeClass();
+    //    $("#apply").addClass("active");
+    //    $('#adTab a:first').tab('show');
+    });
+	$(function(){
+		$('#message').show().delay(3000).hide(0);
+	})
+
+</script>
+{% endblock %}

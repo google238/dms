@@ -1,0 +1,220 @@
+{% extends "layout.html" %}
+{% block title %}用户列表{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+    </style>		
+	 <link type="text/css" href="{{ base }}/css/jquery.dataTables.css" rel="stylesheet">
+	 <link type="text/css" href="{{ base }}/css/jquery.datetimepicker.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    <div class="container">	
+        <div class="row">
+            <div class="page-header">
+                <div class="form-inline" id="Form1">
+					<div class="form-inline" id="">
+					<label for="type">查询类型：</label>
+					<select class="form-control" id="type" name="type" >
+							<option value="">请选择</option>
+							<option value="1">日活跃设备详单</option>
+							<option value="2">日活跃用户信息</option>
+                            <option value="3">日活跃设备地理分布列表视图</option>
+							<option value="4">日活跃设备地理分布平面视图</option>
+					</select>
+					<label for="time">时间：</label>
+					<input type="text" class="form-control" id="time" value=""/>
+					<button type="submit" class="btn btn-default" id="ok" ><font color="#ff0000">查询</font></button>
+					</div>
+				</div>
+			</div>
+			<div id="container" style="width: 700px; height: 500px; "></div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block js %}
+	<script src="{{ base }}/js/jquery.js"></script>
+	<script src="{{ base }}/js/jquery.dataTables.js"></script>
+	<script src="{{ base }}/js/highcharts.js"></script>
+	<script src="{{ base }}/js/modules/exporting.js"></script>
+	<script src="{{ base }}/js/jquery.datetimepicker.js"></script>
+    <script src="http://echarts.baidu.com/build/dist/echarts.js"></script>
+    <script type="text/javascript" charset="utf-8">
+		$(document).ready(function () {
+			$('#time').datetimepicker({
+				lang:"ch",
+				format:"Ymd",
+				timepicker:false,
+				yearStart:2000,
+				yearEnd:2050
+			});
+		});
+        
+        function showdata(respdata){
+             
+            require.config({
+                    paths: {
+                        echarts: 'http://echarts.baidu.com/build/dist'
+                    }
+                });  
+                require(
+                    [
+                        'echarts',
+                        'echarts/chart/map', // 使用柱状图就加载bar模块，按需加载
+                    ],
+                    function (ec) {
+                    var myChart = ec.init(document.getElementById('container'));
+                    var option = {
+                        title : {
+                            text: '插控儿全国位置分布图',
+                            sublink: '',
+                            x:'center',
+                            textStyle:{
+                                fontSize: 24,
+                                fontFamily:"微软雅黑",
+                                },
+                            subtextStyle:{
+                                fontSize:14,
+                                color:'#666666',
+                                fontFamily:"微软雅黑",
+                                },
+                        },
+                        tooltip : {
+                            trigger: 'item'
+                        },
+                        dataRange: {
+                            min : 0,
+                            max : 200,
+                            color: ['maroon','purple','red','orange','yellow','lightgreen']
+                        },
+                         series : [
+                            {
+                                name: '强',
+                                type: 'map',
+                                mapType: 'china',
+                                roam: false,
+                                itemStyle:{
+                                    normal:{label:{show:true}},
+                                    emphasis:{label:{show:true}}
+                                },
+                                data:[
+                                ]
+                            },
+                            {
+                                name: '中',
+                                type: 'map',
+                                mapType: 'china',
+                                itemStyle:{
+                                    normal:{label:{show:true}},
+                                    emphasis:{label:{show:true}}
+                                },
+                                data:[                                   
+                                ]
+                            },
+                            {
+                                name: '弱',
+                                type: 'map',
+                                mapType: 'china',
+                                itemStyle:{
+                                    normal:{label:{show:true}},
+                                    emphasis:{label:{show:true}}
+                                },
+                                data:[
+                                ]
+                            }
+                        ]
+                    };
+                    option.series[0].data = respdata.option.series[0].data;
+                    option.series[1].data = respdata.option.series[1].data;
+                    option.series[2].data = respdata.option.series[2].data;
+                    myChart.hideLoading();
+                    myChart.setOption(option);
+                }
+                );
+                
+        }
+        
+        function EcartsReFresh(time,type){
+
+                        $.ajax({
+                            type:"POST",
+                            url: "/dms/statistic/list",
+                            dataType:"json",
+                            data:{"type":type,'time':time},
+                            success: function (data) {
+                               if (data != null) {
+                                    showdata(data)
+                                }
+                                else {
+                                    alert("请重新尝试！");
+                                }
+                            }
+                        });
+        }
+        
+        
+		//点击查询执行指令
+		$("#ok").click(function event(){
+			time = $('#time').val()
+			type= $('#type option:selected').val()
+			document.getElementById('container').innerHTML = ''
+			
+            columns = new Array()
+            if(type == '4'){
+                EcartsReFresh(time,type)
+            }
+            else{
+            if(type == '1')
+                columns = [{'title':'设备号','class':'center'},{'title':'设备类型','class':'center'},{'title':'注册时间','class':'center'}
+                    ,{'title':'城市','class':'center'},{'title':'区域','class':'center'}]
+            else if (type == '2')               
+                columns = [{'title':'用户名','class':'center'},{'title':'设备号','class':'center'}]
+            else if (type == '3')
+                columns = [{'title':'城市','class':'center'},{'title':'个数','class':'center'}]
+			$('#container').html( '<table cellpadding="0" cellspacing="0" border="0" class="table table-bordered table-hover" id="example" width = 2000px></table><div id="info"></div>' );
+			$('#example').dataTable({
+					"bDeferRender":false,
+					"bPaginate": false,
+					"bLengthChange": true,
+					"bSort": true,
+					"bFilter":false,
+					"bServerSide":true,
+					"bProcessing":true,	
+					"columns":columns,
+					"sScrollX": "100%",	
+					"sScrollY": "100%",	
+					//"aLengthMenu": [100, 500, 1000],
+					//"iDisplayLength": 500,
+					"oLanguage": {
+						"sProcessing": "正在加载中......",
+						"sLengthMenu": "每页显示 _MENU_ 条记录",
+						"sZeroRecords": "对不起，查询不到相关数据！",
+						 "sEmptyTable": "表中无数据存在！",
+						 "sInfo": "当前显示 _START_ 到 _END_ 条，共 _TOTAL_ 条记录",
+						  "sInfoFiltered": "数据表中共为 _MAX_ 条记录",
+						 "sSearch": "搜索",
+						 "oPaginate": {
+							 "sFirst": "首页",
+							 "sPrevious": "上一页",
+							 "sNext": "下一页",
+							 "sLast": "末页"
+						 }
+					 },
+					"dom": 'T<"clear">lfrtip',
+					"ajax":{
+						"type":"POST",
+						"url":"/dms/statistic/list",
+						"dataType":"json",
+						"data":function(conditions){
+							conditions["time"] = time;
+							conditions['type'] = type;
+						}
+					}
+				});	
+            }
+		});
+
+    </script>
+{% endblock %}

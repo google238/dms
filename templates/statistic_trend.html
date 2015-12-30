@@ -1,0 +1,165 @@
+{% extends "layout.html" %}
+{% block title %}用户列表{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+    </style>		
+	 <link type="text/css" href="{{ base }}/css/jquery.dataTables.css" rel="stylesheet">
+	 <link type="text/css" href="{{ base }}/css/jquery.datetimepicker.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    <div class="container">	
+        <div class="row">
+            <div class="page-header">
+                <div class="form-inline" id="conditions">					
+						<label for="time">起始 时间：</label>					
+						<input type="text" class="form-control" id="starttime" value=""/>	
+						<label for="time">终止 时间：</label>					
+						<input type="text" class="form-control" id="endtime" value=""/>
+				</div>
+                <div class="form-inline" id="Form1">					
+					<label for="type">查询 类型：</label>					 
+					<select class="form-control" id="type" name="type" >
+						<option value="">请选择</option>
+						<option value="device">日活跃设备</option>
+						<option value="user">日活跃用户</option>
+					</select>
+					<button type="submit" class="btn btn-default" id="ok" ><font color="#ff0000">查询</font></button>
+					</div>
+				</div>
+			</div>
+			<div id="container" style="width: 700px; height: 500px; "></div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block js %}
+	<script src="{{ base }}/js/jquery.js"></script>
+	<script src="{{ base }}/js/jquery.dataTables.js"></script>
+	<script src="{{ base }}/js/highcharts.js"></script>
+	<script src="{{ base }}/js/modules/exporting.js"></script>
+	<script src="{{ base }}/js/jquery.datetimepicker.js"></script>
+
+    <script type="text/javascript" charset="utf-8">
+		$(document).ready(function () {
+            Highcharts.setOptions({
+				lang: {
+				resetZoom: "返回",
+				resetZoomTitle: "回到初始状态"
+			}
+			});
+            
+			$('#starttime').datetimepicker({
+				lang:"ch",
+				format:"Ymd",
+				timepicker:false,
+				yearStart:2000,
+				yearEnd:2050
+			});
+            
+            $('#endtime').datetimepicker({
+				lang:"ch",
+				format:"Ymd",
+				timepicker:false,
+				yearStart:2000,
+				yearEnd:2050
+			});
+		});
+        
+        function showdata(data){
+			xaxis = new Array()
+			data1 = new Array()
+			var type= $('#type option:selected').text()
+			var dev = $('#devid').val()
+			var xtitle = type + "统计值"
+			var ytitle = '个'
+			for(i=0; i<data.length; i++){
+				xaxis.push(data[i].key)
+				data1.push(parseFloat(data[i].value))
+			}
+			$('#container').highcharts({
+					chart: { 
+				//	renderTo: 'chart_line', //图表放置的容器，DIV 
+					defaultSeriesType: 'spline', //图表类型line(折线图), 
+					zoomType: 'x'   //x轴方向可以缩放 
+				}, 
+				credits: { 
+					enabled: false   //右下角不显示LOGO 
+				}, 
+				title: { 
+					text: xtitle //图表标题 
+				}, 
+				subtitle: { 
+				//	text: '2011年'  //副标题 
+				}, 
+				xAxis: {  //x轴 
+					categories: xaxis, //x轴标签名称 
+					gridLineWidth: 1, //设置网格宽度为1 
+					lineWidth: 2,  //基线宽度 
+					labels: {
+						rotation: -45,
+						style: {
+							fontSize: '13px',
+							fontFamily: 'Verdana, sans-serif'
+						}
+					}
+				}, 
+				yAxis: {  //y轴 
+					title: {text: ytitle}, //标题 
+					lineWidth: 2 //基线宽度 
+					
+				}, 
+				plotOptions:{ //设置数据点 
+					line:{ 
+						dataLabels:{ 
+							enabled:true  //在数据点上显示对应的数据值 
+						}, 
+						enableMouseTracking: false //取消鼠标滑向触发提示框 
+					} 
+				}, 
+				legend: {  //图例 
+					layout: 'horizontal',  //图例显示的样式：水平（horizontal）/垂直（vertical） 
+					backgroundColor: '#ffc', //图例背景色 
+					align: 'right',  //图例水平对齐方式 
+					verticalAlign: 'top',  //图例垂直对齐方式 
+					x: 100,  //相对X位移 
+					y: 70,   //相对Y位移 
+					floating: true, //设置可浮动 
+					shadow: true  //设置阴影 
+				}, 
+				exporting: { 
+					enabled: true  //设置导出按钮不可用 
+				}, 
+				series: [{  //数据列 
+				//	name: dev, 
+					data: data1
+				}] 
+				});
+		}
+        
+        
+		//点击查询执行指令
+		$("#ok").click(function event(){
+			type = $('#type option:selected').val()
+			starttime = $('#starttime').val()
+			endtime = $('#endtime').val()
+			document.getElementById('container').innerHTML = ''
+			
+            $.ajax({
+				    type:"POST",
+				    url: "/dms/statistic/trend",
+				    dataType:"json",
+					data:{"type":type,"starttime":starttime,"endtime":endtime},
+				    success:function(data){     
+					   showdata(data.result)	
+					},
+				    error: function(xmlHttpRequest, textStatus, errorThrown){
+						alert(XMLHttpRequest.status);
+				    }
+			  });
+		});
+
+    </script>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "layout.html" %}
+{% block title %}用户列表{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+	
+    </style>
+	<link type="text/css" href="{{ base }}/css/jquery.dataTables.css" rel="stylesheet">
+	<link type="text/css" href="{{ base }}/css/dataTables.editor.min.css" rel="stylesheet">
+	<link type="text/css" href="{{ base }}/css/dataTables.tableTools.css" rel="stylesheet">
+	<link type="text/css" href="{{ base }}/css/dataTables.responsive.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    <div class="container">	
+        <div class="row">
+            <div class="page-header">
+                <div class="form-inline" id="Form1" method="post" action="/dms/maintain/temp">
+					 <label for="style">类别:</label>
+						<select class="form-control" id="style" name="style">
+							<option value="0">请选择</option>
+							<option value="1">风力状况</option>
+							<option value="2">天气状况</option>
+						</select>
+					<button type="submit" class="btn btn-default" id="ok" ><font color="#ff0000">查询</font></button>	
+                </div>						
+            </div>
+			
+			<div class="table-responsive" id="showdata"></div>
+            
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block js %}
+	<script type="text/javascript" language="javascript" src="{{ base }}/js/jquery-1.11.1.min.js"></script>
+	<script type="text/javascript" language="javascript" src="{{ base }}/js/jquery.dataTables.min.js"></script>
+	<script type="text/javascript" language="javascript" src="{{ base }}/js/dataTables.tableTools.min.js"></script>
+	<script type="text/javascript" language="javascript" src="{{ base }}/js/dataTables.editor.js"></script>
+	
+    <script type="text/javascript">
+		var editor; 
+		$(document).ready(function () {
+			editor = new $.fn.dataTable.Editor( {
+				ajax: "/dms/maintain/temp_editor",
+				table: "#example",
+				fields: [{
+						label: "状态:",
+						name: "weather"
+					}, {
+						label: "指数:",
+						name: "index"
+					}]
+			});
+		});
+
+		$("#ok").click(function event(){
+			
+			$('#showdata').html()
+			style = $('#style option:selected').val()		
+			fields = new Array()
+			if(style == '1')
+				fields = [{label:'状态',name:'wind'},{label:'指数',name:'index'}]
+			else if (style == '2')
+				fields = [{label:'状态',name:'weather'},{label:'指数',name:'index'}]
+			
+		/*	editor = new $.fn.dataTable.Editor( {
+				ajax: "/dms/maintain/temp_editor",
+				table: "#example",
+				fields: fields
+			});*/
+
+			tableheader = [{'title':'状态','class':'center'},{'title':'指数','class':'center'}]
+			$('#showdata').html( '<table cellpadding="0" cellspacing="0" border="0" class="table table-bordered table-hover" id="example" width = 2000px></table>' );
+			$('#example').dataTable({
+				"bDeferRender":false,
+				"bPaginate": false,
+				"sPaginationType":"full_numbers",
+				"bLengthChange": true,
+				"bSort": true,
+				"bFilter":false,
+				"bServerSide":true,
+				"bProcessing":true,
+				"columns":tableheader,				
+				"sScrollX": "100%",
+				"oLanguage": {
+                    "sProcessing": "正在加载中......",
+                    "sLengthMenu": "每页显示 _MENU_ 条记录",
+                    "sZeroRecords": "对不起，查询不到相关数据！",
+                     "sEmptyTable": "表中无数据存在！",
+                     "sInfo": "当前显示 _START_ 到 _END_ 条，共 _TOTAL_ 条记录",
+                      "sInfoFiltered": "数据表中共为 _MAX_ 条记录",
+                     "sSearch": "搜索",
+                     "oPaginate": {
+                         "sFirst": "首页",
+                         "sPrevious": "上一页",
+                         "sNext": "下一页",
+                         "sLast": "末页"
+                     }
+                 },
+				"dom": 'T<"clear">lfrtip',
+				"ajax":{
+					"type":"POST",
+					"url":"/dms/maintain/temp",
+					"dataType":"json",
+					"data":function(conditions){
+						conditions["style"] = style;										
+					}
+				},	
+				'tableTools': {
+					sRowSelect: "os",
+					aButtons: [
+						{ sExtends: "editor_edit",   editor: editor }
+					]
+				}
+			});
+		});
+    </script>
+{% endblock %}
